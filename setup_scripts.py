@@ -56,14 +56,20 @@ def _run_tests(config: _TestsRunParams) -> None:
     current_env['TEST_RESOURCES'] = config.resources_path
     current_env['TEST_RESULTS'] = config.results_path
 
-    logging.info('Running tests...')
+    try:
 
-    command = (f'python -m pytest --import-mode=prepend -s {config.tests_path} --tb=short'
-               f' --junitxml={tests_report_file} -W ignore::DeprecationWarning'
-               f' --cov={src_path} --cov-report=xml:{coverage_data_file}'
-               f' --rootdir={config.tests_path}')
+        logging.info('Running tests...')
 
-    subprocess.run(command.split(), check=False, env=current_env)
+        command = (f'python -m pytest --import-mode=prepend -s {config.tests_path} --tb=short'
+                   f' --junitxml={tests_report_file} -W ignore::DeprecationWarning'
+                   f' --cov={src_path} --cov-report=xml:{coverage_data_file}'
+                   f' --rootdir={config.tests_path}')
+
+        subprocess.run(command.split(), check=True, env=current_env)
+
+    except subprocess.CalledProcessError as proc_error:
+        logging.critical('Tests failed: %s', proc_error)
+        sys.exit(1)
 
 
 def run_unit_tests() -> None:
@@ -102,6 +108,7 @@ def run_repository_checks():
 
     except subprocess.CalledProcessError as proc_error:
         logging.critical('Static checks failed: %s', proc_error)
+        sys.exit(1)
 
 
 def setup_venv() -> None:
@@ -132,7 +139,7 @@ def install_package():
     if not _is_run_from_venv():
         logging.error(
             'You need to run this script from a virtual environment.')
-        return
+        sys.exit(1)
 
     logging.info('Installing the package in the current environment.')
 
@@ -176,6 +183,7 @@ def main(function: str, *args) -> None:
             return
 
     logging.error("Couldn't find the function '%s'.", function)
+    sys.exit(1)
 
 
 def _is_run_from_venv():

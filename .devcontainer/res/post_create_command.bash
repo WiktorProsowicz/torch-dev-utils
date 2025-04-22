@@ -7,7 +7,7 @@
 deactivate 2> /dev/null
 rm -rf venv
 
-python3.11 setup_scripts.py setup_venv && source venv/bin/activate
+python3 setup_scripts.py setup_venv && source venv/bin/activate
 
 python setup_scripts.py install_package
 
