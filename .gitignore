@@ -1,7 +1,8 @@
 dist/
 build/
 src/torch_dev_utils.egg-info
-.venv/
-.coverage
-coverage.xml
+venv/
+test_results/
 **/__pycache__/
+.vscode/
+.coverage
