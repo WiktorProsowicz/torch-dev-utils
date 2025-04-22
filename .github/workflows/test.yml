@@ -24,6 +24,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Run pytest
+        shell: bash
         run: python setup_scripts.py run_unit_tests
 
       - name: Upload coverage
