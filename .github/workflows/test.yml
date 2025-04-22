@@ -4,10 +4,7 @@
 
 name: test
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   pytest:
@@ -22,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup packages
-        uses: .github/actions/setup
+        uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
 
