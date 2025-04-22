@@ -21,4 +21,4 @@ runs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
 
     - name: Install dependencies
-        run: /bin/bash .devcontainer/res/post_create_command.bash
+      run: /bin/bash .devcontainer/res/post_create_command.bash
