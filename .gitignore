@@ -4,5 +4,7 @@ src/torch_dev_utils.egg-info
 venv/
 test_results/
 **/__pycache__/
+**/.mypy_cache/
+**/.pytest_cache/
 .vscode/
 .coverage
