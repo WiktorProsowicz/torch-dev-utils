@@ -37,7 +37,8 @@ def _run_tests(config: _TestsRunParams) -> None:
 
     src_path = path.join(HOME_PATH, 'src')
 
-    coverage_data_file = path.join(config.results_path, 'coverage.xml')
+    coverage_data_file = path.join(config.results_path, 'coverage_report.xml')
+    coverage_html_dir = path.join(config.results_path, 'coverage_html_report')
     tests_report_file = path.join(config.results_path, 'tests_report.xml')
 
     if not os.path.exists(config.results_path):
@@ -60,10 +61,15 @@ def _run_tests(config: _TestsRunParams) -> None:
 
         logging.info('Running tests...')
 
-        command = (f'python -m pytest --import-mode=prepend -s {config.tests_path} --tb=short'
+        command = (f'python -m pytest --import-mode=prepend -s {config.tests_path} --tb=short -v'
                    f' --junitxml={tests_report_file} -W ignore::DeprecationWarning'
-                   f' --cov={src_path} --cov-report=xml:{coverage_data_file}'
-                   f' --rootdir={config.tests_path}')
+                   f' --cov={src_path} --cov-report=html:{coverage_html_dir}'
+                   f' --rootdir={config.tests_path}'
+                   ' --disable-warnings')
+
+        subprocess.run(command.split(), check=True, env=current_env)
+
+        command = 'coverage report'
 
         subprocess.run(command.split(), check=True, env=current_env)
 

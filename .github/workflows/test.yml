@@ -28,8 +28,8 @@ jobs:
         shell: bash
         run: source venv/bin/activate && python setup_scripts.py run_unit_tests
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
         with:
-          fail_ci_if_error: false
-          files: test_results/coverage.xml
+          name: test_results
+          path: test_results/
