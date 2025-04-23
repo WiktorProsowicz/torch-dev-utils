@@ -37,7 +37,6 @@ def _run_tests(config: _TestsRunParams) -> None:
 
     src_path = path.join(HOME_PATH, 'src')
 
-    coverage_data_file = path.join(config.results_path, 'coverage_report.xml')
     coverage_html_dir = path.join(config.results_path, 'coverage_html_report')
     tests_report_file = path.join(config.results_path, 'tests_report.xml')
 

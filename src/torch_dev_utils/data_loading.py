@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 """Contains tools for loading serialized dataset."""
-
 import os
 from typing import List
 from typing import Tuple
@@ -51,10 +51,10 @@ def get_datasets(processed_dataset_path: str,
                  ) -> Tuple[torch_data.Dataset, torch_data.Dataset, torch_data.Dataset]:
     """Returns train/validation/test sets for processed dataset.
 
-    A processed dataset is a dataset that has already been pre-processed and saved in a directory 
+    A processed dataset is a dataset that has already been pre-processed and saved in a directory
     as a set of .pt files. The files are expected to contain PyTorch tensors and built-in structures
     si that it could be loaded using torch.load. The files' names shall be considered as the IDs of
-    the samples.  
+    the samples.
 
     Args:
         dataset_path: Path to the processed dataset.

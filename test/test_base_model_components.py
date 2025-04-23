@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import dataclasses
 import itertools
 from typing import Optional

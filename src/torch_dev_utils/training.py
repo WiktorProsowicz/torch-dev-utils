@@ -2,11 +2,11 @@
 """Contains utilities for training and evaluation of models."""
 import abc
 import logging
+import sys
 import time
 from typing import Dict
 from typing import Optional
 from typing import Tuple
-import sys
 
 import torch.utils.tensorboard
 
@@ -25,7 +25,7 @@ class BaseTrainer(abc.ABC):
     - Running backward propagation and optimization
     """
 
-    def __init__(self,
+    def __init__(self,  # pylint: disable=too-many-positional-arguments
                  model_comps: model.BaseModelComponents,
                  optimizer: misc.IOptimizerWrapper,
                  checkpoints_handler: serialization.ModelCheckpointHandler,
@@ -65,7 +65,6 @@ class BaseTrainer(abc.ABC):
         self._checkpoints_interval = checkpoints_interval
         self._optimizer = optimizer
         self._log_interval = log_interval
-    
 
     def run_training(self, num_steps: int, start_step: int = 0, use_profiler: bool = False):
         """Runs the training pipeline.

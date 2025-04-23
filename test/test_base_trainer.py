@@ -1,21 +1,21 @@
-
-from typing import Dict
-from typing import Tuple
-import pytest
+# -*- coding: utf-8 -*-
 import dataclasses
 import os
 import shutil
 import sys
+from typing import Dict
+from typing import Tuple
 
+import pytest
 import torch
 import torch.utils.tensorboard as tb
 from tensorboard.backend.event_processing import event_accumulator
 
-from torch_dev_utils import training
+from torch_dev_utils import data_loading
+from torch_dev_utils import misc
 from torch_dev_utils import model
 from torch_dev_utils import serialization
-from torch_dev_utils import misc
-from torch_dev_utils import data_loading
+from torch_dev_utils import training
 
 
 # ----------------------------------------------------------------------------
@@ -54,10 +54,11 @@ class SampleTrainer(training.BaseTrainer):
 
     @property
     def model_comps(self) -> SampleModelComps:
+        assert isinstance(self._model_comps, SampleModelComps)
         return self._model_comps
 
     def _compute_losses(self,
-                        input_batch: Tuple[torch.Tensor, torch.Tensor]
+                        input_batch: Tuple[torch.Tensor, ...]
                         ) -> Dict[str, torch.Tensor]:
 
         inputs, labels = input_batch
@@ -86,7 +87,7 @@ def training_data():
 
     model_comps = SampleModelComps(layer=torch.nn.Linear(5, 1))
     optimizer = torch.optim.SGD(model_comps.parameters(), lr=0.1)
-    
+
     logging_path = os.path.join(results_path, 'logs')
     tb_logger = tb.writer.SummaryWriter(logging_path)
     handler = serialization.ModelCheckpointHandler(
@@ -109,7 +110,7 @@ def training_data():
         validation_interval=5,
         checkpoints_interval=5,
         log_interval=1)
-    
+
     trainer.run_training(num_steps=20, start_step=10, use_profiler=False)
 
     return trainer, handler, logging_path
@@ -125,12 +126,14 @@ def test_checkpoints_are_saved(training_data):
 
     assert handler.num_checkpoints() == 3
 
+
 def test_training_hooks_are_called(training_data):
 
     trainer, _, _ = training_data
-    
+
     assert trainer.steps_start_cnt == 10
     assert trainer.steps_end_cnt == 10
+
 
 @pytest.mark.parametrize('label, expected_length', [
     ('total_loss_training', 10),
@@ -146,4 +149,3 @@ def test_losses_are_logged(label, expected_length, training_data):
     run.Reload()
 
     assert len(run.Scalars('total_loss')) == expected_length
-

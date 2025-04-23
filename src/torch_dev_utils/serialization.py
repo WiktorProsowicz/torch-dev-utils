@@ -1,19 +1,19 @@
+# -*- coding: utf-8 -*-
 """Contains utilities for serializing and deserializing PyTorch-based models."""
-
-from typing import Dict
-from typing import Any
-from typing import Tuple
-import sys
+import json
 import logging
 import os
-import json
+import sys
 import time
+from typing import Any
+from typing import Dict
+from typing import Tuple
 
 import torch
 
-from model import NamedModelComps
-import model
-import misc
+from torch_dev_utils import misc
+from torch_dev_utils import model
+from torch_dev_utils.model import NamedModelComps
 
 
 def _try_load_state_dict(module: torch.nn.Module,
@@ -53,7 +53,7 @@ def _load_from_path(modules: NamedModelComps,
                                  be_strict)
 
 
-def _save_to_path(self, modules: NamedModelComps, path: str):
+def _save_to_path(modules: NamedModelComps, path: str):
     """Saves the model components to the specified directory."""
 
     os.makedirs(path, exist_ok=True)
@@ -81,7 +81,7 @@ class ModelCheckpointHandler:
             checkpoint_basename: The base name of the checkpoints.
             device: The device to load the model components to.
             missing_modules_strict: If True, if the state dict of a component is not found while
-                loading the model's state, the program will terminate with critical error. 
+                loading the model's state, the program will terminate with critical error.
         """
 
         self._checkpoint_dir = checkpoint_dir

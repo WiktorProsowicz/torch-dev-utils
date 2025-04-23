@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 """Contains utilities for model definition."""
-
 import abc
 from typing import Dict
 from typing import Iterator

@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 import pytest
 import torch
 
@@ -77,6 +77,6 @@ def test_loads_state_dict(sgd_wrapper, sgd_wrapper_2):
 
     assert (state_dict_after['param_groups'][0]['lr']
             == state_dict['param_groups'][0]['lr'])
-    
+
     assert (state_dict_after['param_groups'][0]['momentum']
             == state_dict['param_groups'][0]['momentum'])

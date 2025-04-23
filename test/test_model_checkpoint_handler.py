@@ -1,15 +1,15 @@
-
-from typing import Optional
+# -*- coding: utf-8 -*-
 import dataclasses
 import os
 import shutil
+from typing import Optional
 
 import pytest
 import torch
 
-from torch_dev_utils import serialization
-from torch_dev_utils import model
 from torch_dev_utils import misc
+from torch_dev_utils import model
+from torch_dev_utils import serialization
 
 
 # ----------------------------------------------------------------------------
