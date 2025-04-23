@@ -1,18 +1,18 @@
+# -*- coding: utf-8 -*-
 """Contains utilities for training and evaluation of models."""
-
 import abc
 import logging
 import time
 from typing import Dict
 from typing import Optional
 from typing import Tuple
+import sys
 
-import torch
 import torch.utils.tensorboard
 
-import model
-import serialization
-import misc
+from torch_dev_utils import misc
+from torch_dev_utils import model
+from torch_dev_utils import serialization
 
 
 class BaseTrainer(abc.ABC):
@@ -35,20 +35,20 @@ class BaseTrainer(abc.ABC):
                  device: torch.device,
                  validation_interval: int,
                  checkpoints_interval: int,
-                 log_interval: int = 100
-                 ):
+                 log_interval: int = 100):
         """Initializes the trainer.
 
         Args:
             model_comps: Components of the model to be trained.
+            optimizer: The optimizer to use for training.
+            checkpoints_handler: The handler for saving/loading model checkpoints.
             train_data_loader: The data loader for the training data.
             val_data_loader: The data loader for the validation data.
             tb_logger: The TensorBoard logger.
             device: The device to run the training on.
             validation_interval: The number of steps between validation runs.
-            checkpoints_handler: The handler for saving/loading model checkpoints.
             checkpoints_interval: The number of steps between saving checkpoints.
-            optimizer: The optimizer to use for training.
+            log_interval: The number of steps between logging training progress.
         """
 
         if checkpoints_handler.num_checkpoints() > 0:
@@ -65,12 +65,14 @@ class BaseTrainer(abc.ABC):
         self._checkpoints_interval = checkpoints_interval
         self._optimizer = optimizer
         self._log_interval = log_interval
+    
 
     def run_training(self, num_steps: int, start_step: int = 0, use_profiler: bool = False):
         """Runs the training pipeline.
 
         Args:
-            num_steps: The number of training steps to run.
+            num_steps: The total number of training steps to run. Once the step index reaches this,
+                the training stops.
             start_step: The step to start training from.
             use_profiler: Whether to use the code profiling while training.
         """
@@ -108,6 +110,8 @@ class BaseTrainer(abc.ABC):
         data_loader_enum = enumerate(self._train_data_loader)
 
         for step_idx in range(start_step, num_steps):
+
+            self._on_step_start(step_idx)
 
             try:
                 _, batch = next(data_loader_enum)
@@ -166,6 +170,10 @@ class BaseTrainer(abc.ABC):
         for name, value in losses_and_metrics.items():
             self._tb_logger.add_scalars(name, {'training': value.item()}, step_idx)
 
+        if 'total_loss' not in losses_and_metrics:
+            logging.critical('Returned losses dictionary should contain "total_loss" key!')
+            sys.exit(1)
+
         total_loss = losses_and_metrics['total_loss']
 
         total_loss.backward()
@@ -222,6 +230,14 @@ class BaseTrainer(abc.ABC):
 
     @abc.abstractmethod
     def _on_step_end(self, step_idx: int):
+        """Runs after each training step.
+
+        Args:
+            step_idx: The index of the current step.
+        """
+
+    @abc.abstractmethod
+    def _on_step_start(self, step_idx: int):
         """Runs after each training step.
 
         Args:
