@@ -81,7 +81,7 @@ def get_datasets(processed_dataset_path: str,
 
     file_ids = [file_id for file_id in file_ids if file_id not in test_file_ids]
 
-    n_val_files = int(len(file_ids) * (1.0 - train_split_ratio))
+    n_val_files = round(len(file_ids) * (1.0 - train_split_ratio))
     val_file_ids = rng.choice(file_ids, n_val_files, replace=False)
     train_file_ids = [file_id for file_id in file_ids if file_id not in val_file_ids]
 
