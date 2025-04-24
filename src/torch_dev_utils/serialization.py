@@ -104,6 +104,7 @@ class ModelCheckpointHandler:
 
         Args:
             model_components: The components of the model to load the checkpoint into.
+            optimizer: The optimizer to load the checkpoint into.
 
         Returns:
             A tuple containing the model components, optimizer and the metadata of the
@@ -116,18 +117,42 @@ class ModelCheckpointHandler:
             logging.critical('No checkpoints found.')
             sys.exit(1)
 
-        newest_checkpoint = metadata['checkpoints'][-1]
+        return self._load_given_checkpoint(metadata['checkpoints'][-1],
+                                           model_components,
+                                           optimizer)
 
-        checkpoint_path = os.path.join(self._checkpoint_dir, newest_checkpoint['directory_name'])
-        optim_state_path = os.path.join(checkpoint_path, 'optimizer_state.pth')
+    def get_checkpoint(self,
+                       checkpoint_id: str,
+                       model_components: model.BaseModelComponents,
+                       optimizer: misc.IOptimizerWrapper
+                       ) -> Tuple[model.BaseModelComponents,
+                                  misc.IOptimizerWrapper,
+                                  Dict[str, Any]]:
+        """Loads the given checkpoint from the checkpoint directory.
 
-        _load_from_path(model_components.get_components(),
-                        checkpoint_path,
-                        self._device,
-                        self._missing_modules_strict)
-        optimizer.load_state_dict(torch.load(optim_state_path, weights_only=True))
+        Args:
+            checkpoint_id: The ID of the checkpoint to load, e.g. 'ckpt_4'.
+            model_components: The components of the model to load the checkpoint into.
+            optimizer: The optimizer to load the checkpoint into.
 
-        return model_components, optimizer, newest_checkpoint['metadata']
+        Returns:
+            A tuple containing the model components, optimizer and the metadata of the
+            newest checkpoint.
+        """
+
+        metadata = self._get_metadata()
+
+        filtered_ckpts = [ckpt
+                          for ckpt in metadata['checkpoints']
+                          if ckpt['directory_name'] == checkpoint_id]
+
+        if not filtered_ckpts:
+            logging.critical('Checkpoint with ID %s not found.', checkpoint_id)
+            sys.exit(1)
+
+        return self._load_given_checkpoint(filtered_ckpts[0],
+                                           model_components,
+                                           optimizer)
 
     def save_checkpoint(self,
                         model_components: model.BaseModelComponents,
@@ -164,6 +189,24 @@ class ModelCheckpointHandler:
         })
 
         self._save_metadata(metadata)
+
+    def _load_given_checkpoint(self,
+                               ckpt_info: Dict[str, Any],
+                               model_components: model.BaseModelComponents,
+                               optimizer: misc.IOptimizerWrapper
+                               ):
+        """Returns the checkpoint corresponding with a given info."""
+
+        checkpoint_path = os.path.join(self._checkpoint_dir, ckpt_info['directory_name'])
+        optim_state_path = os.path.join(checkpoint_path, 'optimizer_state.pth')
+
+        _load_from_path(model_components.get_components(),
+                        checkpoint_path,
+                        self._device,
+                        self._missing_modules_strict)
+        optimizer.load_state_dict(torch.load(optim_state_path, weights_only=True))
+
+        return model_components, optimizer, ckpt_info['metadata']
 
     def _get_metadata(self) -> Dict[str, Any]:
         """Returns the metadata of the saved checkpoints."""
