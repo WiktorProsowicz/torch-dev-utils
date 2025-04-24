@@ -52,8 +52,9 @@ class BaseTrainer(abc.ABC):
         """
 
         if checkpoints_handler.num_checkpoints() > 0:
-            model_comps, optimizer, _ = checkpoints_handler.get_newest_checkpoint(model_comps,
-                                                                                  optimizer)
+            model_comps, optimizer, _ = checkpoints_handler.get_newest_checkpoint(  # type: ignore
+                model_comps,
+                optimizer)
 
         self._model_comps = model_comps
         self._train_data_loader = train_data_loader

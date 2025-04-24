@@ -7,6 +7,7 @@ import sys
 import time
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 
 import torch
@@ -96,9 +97,9 @@ class ModelCheckpointHandler:
 
     def get_newest_checkpoint(self,
                               model_components: model.BaseModelComponents,
-                              optimizer: misc.IOptimizerWrapper
+                              optimizer: Optional[misc.IOptimizerWrapper] = None
                               ) -> Tuple[model.BaseModelComponents,
-                                         misc.IOptimizerWrapper,
+                                         Optional[misc.IOptimizerWrapper],
                                          Dict[str, Any]]:
         """Loads the newest checkpoint from the checkpoint directory.
 
@@ -124,9 +125,9 @@ class ModelCheckpointHandler:
     def get_checkpoint(self,
                        checkpoint_id: str,
                        model_components: model.BaseModelComponents,
-                       optimizer: misc.IOptimizerWrapper
+                       optimizer: Optional[misc.IOptimizerWrapper] = None
                        ) -> Tuple[model.BaseModelComponents,
-                                  misc.IOptimizerWrapper,
+                                  Optional[misc.IOptimizerWrapper],
                                   Dict[str, Any]]:
         """Loads the given checkpoint from the checkpoint directory.
 
@@ -193,7 +194,7 @@ class ModelCheckpointHandler:
     def _load_given_checkpoint(self,
                                ckpt_info: Dict[str, Any],
                                model_components: model.BaseModelComponents,
-                               optimizer: misc.IOptimizerWrapper
+                               optimizer: Optional[misc.IOptimizerWrapper]
                                ):
         """Returns the checkpoint corresponding with a given info."""
 
@@ -204,7 +205,9 @@ class ModelCheckpointHandler:
                         checkpoint_path,
                         self._device,
                         self._missing_modules_strict)
-        optimizer.load_state_dict(torch.load(optim_state_path, weights_only=True))
+
+        if optimizer is not None:
+            optimizer.load_state_dict(torch.load(optim_state_path, weights_only=True))
 
         return model_components, optimizer, ckpt_info['metadata']
 
