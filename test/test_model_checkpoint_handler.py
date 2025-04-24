@@ -75,7 +75,11 @@ def test_fails_if_not_found_expected_comps(sample_comps_complete):
     comps, optimizer, _ = handler.get_newest_checkpoint(comps, optimizer)
 
 
-def test_correctly_loads_preexisting_state(sample_comps_incomplete):
+@pytest.mark.parametrize('load_func', [
+    lambda handler, comps, opt: handler.get_newest_checkpoint(comps, opt),
+    lambda handler, comps, opt: handler.get_checkpoint('ckpt_0', comps, opt),
+])
+def test_correctly_loads_preexisting_state(load_func, sample_comps_incomplete):
 
     comps, optimizer = sample_comps_incomplete
 
@@ -87,8 +91,7 @@ def test_correctly_loads_preexisting_state(sample_comps_incomplete):
 
     assert handler.num_checkpoints() == 1
 
-    comps, optimizer, metadata = handler.get_newest_checkpoint(
-        comps, optimizer)
+    comps, optimizer, metadata = load_func(handler, comps, optimizer)
 
     assert optimizer.state_dict()['state']
     assert metadata['n_training_steps'] == 3000
