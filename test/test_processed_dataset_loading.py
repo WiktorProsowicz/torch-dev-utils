@@ -65,3 +65,12 @@ def test_dataset_is_loaded_deterministically():
 
     for sample_1, sample_2 in zip(test_set_1, test_set_2):
         assert sample_1 == sample_2
+
+
+def test_getting_file_id_from_dataset():
+
+    ds = data_loading.ProcessedDataset(ds_path, ['0', '1', '2'])
+
+    assert ds.get_file_id(0) == '0'
+    assert ds.get_file_id(1) == '1'
+    assert ds.get_file_id(2) == '2'
