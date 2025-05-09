@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Tuple
 
 import torch.utils.tensorboard
+import tqdm
 
 from torch_dev_utils import misc
 from torch_dev_utils import model
@@ -114,11 +115,18 @@ class BaseTrainer(abc.ABC):
         """
 
         start_time = time.time()
-        logging.debug('Training pipeline started.')
+        logging.info('Training pipeline started.')
 
         data_loader_enum = enumerate(self._train_data_loader)
 
-        for step_idx in range(start_step, num_steps):
+        for step_idx in tqdm.tqdm(range(start_step, num_steps),
+                                  desc='Training',
+                                  dynamic_ncols=True,
+                                  miniters=self._log_interval,
+                                  unit='steps',
+                                  total=num_steps,
+                                  initial=start_step,
+                                  colour='#115b80'):
 
             self._on_step_start(step_idx)
 
@@ -134,14 +142,8 @@ class BaseTrainer(abc.ABC):
 
             self._run_training_step(step_idx, batch)
 
-            if (step_idx + 1) % self._log_interval == 0:
-                logging.debug('Performed %d training steps. (Avg time/step in sec: %.2f).',
-                              step_idx + 1,
-                              (time.time() - start_time) / (step_idx - start_step + 1))
-
             if (step_idx + 1) % self._validation_interval == 0:
 
-                logging.debug('Running validation after %d steps...', step_idx + 1)
                 self._run_validation(step_idx)
 
             if (step_idx + 1) % self._checkpoints_interval == 0:
@@ -157,9 +159,9 @@ class BaseTrainer(abc.ABC):
             self._on_step_end(step_idx)
 
         logging.info('Training pipeline finished.')
-        logging.debug('Training took %.2f minutes.', (time.time() - start_time) / 60)
-        logging.debug('Average time per step: %.2f seconds.',
-                      (time.time() - start_time) / (num_steps - start_step))
+        logging.info('Training took %.2f minutes.', (time.time() - start_time) / 60)
+        logging.info('Average time per step: %.2f seconds.',
+                     (time.time() - start_time) / (num_steps - start_step))
 
     def _run_training_step(self, step_idx: int, batch):
         """Runs a single training step.
@@ -201,7 +203,11 @@ class BaseTrainer(abc.ABC):
 
             avg_losses_and_metrics = {}
 
-            for batch in self._val_data_loader:
+            for batch in tqdm.tqdm(self._val_data_loader,
+                                   'Validation',
+                                   leave=False,
+                                   unit='batches',
+                                   colour='#1b91cc'):
 
                 batch = tuple(tensor.to(self._device) for tensor in batch)
 
