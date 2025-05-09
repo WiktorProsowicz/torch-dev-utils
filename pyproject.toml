@@ -19,3 +19,6 @@ dev = [
     "pre-commit",
     "pylint"
 ]
+
+[tool.coverage.report]
+fail_under = 90
