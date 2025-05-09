@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 """Contains tools for loading serialized dataset."""
-
 import os
 from typing import List
 from typing import Tuple
@@ -9,7 +9,7 @@ import torch
 from torch.utils import data as torch_data
 
 
-class _ProcessedDataset(torch_data.Dataset):
+class ProcessedDataset(torch_data.Dataset):
     """Contains processed dataset samples."""
 
     def __init__(self, dataset_path: str, file_ids: List[str]):
@@ -43,18 +43,30 @@ class _ProcessedDataset(torch_data.Dataset):
         sample_path = os.path.join(self._dataset_path, f'{file_id}.pt')
         return torch.load(sample_path, weights_only=True)
 
+    def get_file_id(self, idx: int) -> str:
+        """Returns the file ID of the sample with the given index.
+
+        Args:
+            idx: Index of the sample to return.
+
+        Returns:
+            File ID of the requested data sample.
+        """
+
+        return self._file_ids[idx]
+
 
 def get_datasets(processed_dataset_path: str,
                  train_split_ratio: float,
                  n_test_files: int,
                  split_deterministic: bool = True
-                 ) -> Tuple[torch_data.Dataset, torch_data.Dataset, torch_data.Dataset]:
+                 ) -> Tuple[ProcessedDataset, ProcessedDataset, ProcessedDataset]:
     """Returns train/validation/test sets for processed dataset.
 
-    A processed dataset is a dataset that has already been pre-processed and saved in a directory 
+    A processed dataset is a dataset that has already been pre-processed and saved in a directory
     as a set of .pt files. The files are expected to contain PyTorch tensors and built-in structures
     si that it could be loaded using torch.load. The files' names shall be considered as the IDs of
-    the samples.  
+    the samples.
 
     Args:
         dataset_path: Path to the processed dataset.
@@ -81,10 +93,10 @@ def get_datasets(processed_dataset_path: str,
 
     file_ids = [file_id for file_id in file_ids if file_id not in test_file_ids]
 
-    n_val_files = int(len(file_ids) * (1.0 - train_split_ratio))
+    n_val_files = round(len(file_ids) * (1.0 - train_split_ratio))
     val_file_ids = rng.choice(file_ids, n_val_files, replace=False)
     train_file_ids = [file_id for file_id in file_ids if file_id not in val_file_ids]
 
-    return (_ProcessedDataset(processed_dataset_path, train_file_ids),
-            _ProcessedDataset(processed_dataset_path, val_file_ids),
-            _ProcessedDataset(processed_dataset_path, test_file_ids))
+    return (ProcessedDataset(processed_dataset_path, train_file_ids),
+            ProcessedDataset(processed_dataset_path, list(val_file_ids)),
+            ProcessedDataset(processed_dataset_path, list(test_file_ids)))
