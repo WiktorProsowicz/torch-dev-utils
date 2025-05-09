@@ -2,14 +2,13 @@
 import dataclasses
 import os
 import shutil
-import sys
 from typing import Dict
 from typing import Tuple
 
 import pytest
 import torch
 import torch.utils.tensorboard as tb
-from tensorboard.backend.event_processing import event_accumulator
+from tensorboard.backend.event_processing import event_accumulator  # type: ignore
 
 from torch_dev_utils import data_loading
 from torch_dev_utils import misc
@@ -45,8 +44,8 @@ class SampleModelComps(model.BaseModelComponents):
 
 class SampleTrainer(training.BaseTrainer):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, params: training.BaseTrainerParams):
+        super().__init__(params)
 
         self.steps_start_cnt = 0
         self.steps_end_cnt = 0
@@ -99,7 +98,7 @@ def training_data():
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=1)
     test_loader = torch.utils.data.DataLoader(test_ds, batch_size=1)
 
-    trainer = SampleTrainer(
+    trainer_params = training.BaseTrainerParams(
         model_comps=model_comps,
         optimizer=misc.wrap_torch_optimizer(optimizer),
         checkpoints_handler=handler,
@@ -110,6 +109,8 @@ def training_data():
         validation_interval=5,
         checkpoints_interval=5,
         log_interval=1)
+
+    trainer = SampleTrainer(trainer_params)
 
     trainer.run_training(num_steps=20, start_step=10, use_profiler=False)
 

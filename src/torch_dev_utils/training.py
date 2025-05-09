@@ -4,6 +4,7 @@ import abc
 import logging
 import sys
 import time
+from dataclasses import dataclass
 from typing import Dict
 from typing import Optional
 from typing import Tuple
@@ -15,6 +16,32 @@ from torch_dev_utils import model
 from torch_dev_utils import serialization
 
 
+@dataclass
+class BaseTrainerParams:
+    """Contains the parameters for the base training pipeline."""
+
+    # Components of the model to be trained.
+    model_comps: model.BaseModelComponents
+    # The optimizer to use for training.
+    optimizer: misc.IOptimizerWrapper
+    # The handler for saving/loading model checkpoints.
+    checkpoints_handler: serialization.ModelCheckpointHandler
+    # The data loader for the training data.
+    train_data_loader: torch.utils.data.DataLoader
+    # The data loader for the validation data.
+    val_data_loader: torch.utils.data.DataLoader
+    # The TensorBoard logger for logging training progress.
+    tb_logger: torch.utils.tensorboard.writer.SummaryWriter
+    # The device to run the training on (CPU or GPU).
+    device: torch.device
+    # The number of steps between validation runs.
+    validation_interval: int
+    # The number of steps between saving checkpoints.
+    checkpoints_interval: int
+    # The number of steps between logging training progress.
+    log_interval: int
+
+
 class BaseTrainer(abc.ABC):
     """Base class for the model training pipeline.
 
@@ -23,49 +50,31 @@ class BaseTrainer(abc.ABC):
     - Running validation and training loop
     - Saving and loading model checkpoints
     - Running backward propagation and optimization
+
+    The base training pipeline
     """
 
-    def __init__(self,  # pylint: disable=too-many-positional-arguments
-                 model_comps: model.BaseModelComponents,
-                 optimizer: misc.IOptimizerWrapper,
-                 checkpoints_handler: serialization.ModelCheckpointHandler,
-                 train_data_loader: torch.utils.data.DataLoader,
-                 val_data_loader: torch.utils.data.DataLoader,
-                 tb_logger: torch.utils.tensorboard.writer.SummaryWriter,
-                 device: torch.device,
-                 validation_interval: int,
-                 checkpoints_interval: int,
-                 log_interval: int = 100):
-        """Initializes the trainer.
+    def __init__(self, params: BaseTrainerParams):
+        """Initializes the trainer"""
 
-        Args:
-            model_comps: Components of the model to be trained.
-            optimizer: The optimizer to use for training.
-            checkpoints_handler: The handler for saving/loading model checkpoints.
-            train_data_loader: The data loader for the training data.
-            val_data_loader: The data loader for the validation data.
-            tb_logger: The TensorBoard logger.
-            device: The device to run the training on.
-            validation_interval: The number of steps between validation runs.
-            checkpoints_interval: The number of steps between saving checkpoints.
-            log_interval: The number of steps between logging training progress.
-        """
+        model_comps = params.model_comps
+        optimizer = params.optimizer
 
-        if checkpoints_handler.num_checkpoints() > 0:
-            model_comps, optimizer, _ = checkpoints_handler.get_newest_checkpoint(  # type: ignore
+        if params.checkpoints_handler.num_checkpoints() > 0:
+            model_comps, optimizer, _ = params.checkpoints_handler.get_newest_checkpoint(  # type: ignore # pylint: disable=line-too-long
                 model_comps,
                 optimizer)
 
         self._model_comps = model_comps
-        self._train_data_loader = train_data_loader
-        self._val_data_loader = val_data_loader
-        self._tb_logger = tb_logger
-        self._device = device
-        self._validation_interval = validation_interval
-        self._checkpoints_handler = checkpoints_handler
-        self._checkpoints_interval = checkpoints_interval
         self._optimizer = optimizer
-        self._log_interval = log_interval
+        self._train_data_loader = params.train_data_loader
+        self._val_data_loader = params.val_data_loader
+        self._tb_logger = params.tb_logger
+        self._device = params.device
+        self._validation_interval = params.validation_interval
+        self._checkpoints_handler = params.checkpoints_handler
+        self._checkpoints_interval = params.checkpoints_interval
+        self._log_interval = params.log_interval
 
     def run_training(self, num_steps: int, start_step: int = 0, use_profiler: bool = False):
         """Runs the training pipeline.
