@@ -1,14 +1,20 @@
+---
 # -------------------------------------------------------------------
 # Contains a GitHub Actions workflow for running pre-commit hooks.
 # -------------------------------------------------------------------
 
 name: pre-commit
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   checks:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12, 3.13]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,6 +25,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Run pre-commit hooks
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
+        run: source venv/bin/activate && python setup_scripts.py run_repository_checks
+        shell: bash

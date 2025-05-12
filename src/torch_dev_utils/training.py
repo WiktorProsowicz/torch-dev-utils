@@ -1,18 +1,47 @@
+# -*- coding: utf-8 -*-
 """Contains utilities for training and evaluation of models."""
-
 import abc
+import itertools
 import logging
+import sys
 import time
+from dataclasses import dataclass
 from typing import Dict
 from typing import Optional
 from typing import Tuple
 
-import torch
 import torch.utils.tensorboard
+import tqdm
 
-import model
-import serialization
-import misc
+from torch_dev_utils import misc
+from torch_dev_utils import model
+from torch_dev_utils import serialization
+
+
+@dataclass
+class BaseTrainerParams:
+    """Contains the parameters for the base training pipeline."""
+
+    # Components of the model to be trained.
+    model_comps: model.BaseModelComponents
+    # The optimizer to use for training.
+    optimizer: misc.IOptimizerWrapper
+    # The handler for saving/loading model checkpoints.
+    checkpoints_handler: serialization.ModelCheckpointHandler
+    # The data loader for the training data.
+    train_data_loader: torch.utils.data.DataLoader
+    # The data loader for the validation data.
+    val_data_loader: torch.utils.data.DataLoader
+    # The TensorBoard logger for logging training progress.
+    tb_logger: torch.utils.tensorboard.writer.SummaryWriter
+    # The device to run the training on (CPU or GPU).
+    device: torch.device
+    # The number of steps between validation runs.
+    validation_interval: int
+    # The number of steps between saving checkpoints.
+    checkpoints_interval: int
+    # The number of steps between logging training progress.
+    log_interval: int
 
 
 class BaseTrainer(abc.ABC):
@@ -23,54 +52,38 @@ class BaseTrainer(abc.ABC):
     - Running validation and training loop
     - Saving and loading model checkpoints
     - Running backward propagation and optimization
+
+    The base training pipeline
     """
 
-    def __init__(self,
-                 model_comps: model.BaseModelComponents,
-                 optimizer: misc.IOptimizerWrapper,
-                 checkpoints_handler: serialization.ModelCheckpointHandler,
-                 train_data_loader: torch.utils.data.DataLoader,
-                 val_data_loader: torch.utils.data.DataLoader,
-                 tb_logger: torch.utils.tensorboard.writer.SummaryWriter,
-                 device: torch.device,
-                 validation_interval: int,
-                 checkpoints_interval: int,
-                 log_interval: int = 100
-                 ):
-        """Initializes the trainer.
+    def __init__(self, params: BaseTrainerParams):
+        """Initializes the trainer"""
 
-        Args:
-            model_comps: Components of the model to be trained.
-            train_data_loader: The data loader for the training data.
-            val_data_loader: The data loader for the validation data.
-            tb_logger: The TensorBoard logger.
-            device: The device to run the training on.
-            validation_interval: The number of steps between validation runs.
-            checkpoints_handler: The handler for saving/loading model checkpoints.
-            checkpoints_interval: The number of steps between saving checkpoints.
-            optimizer: The optimizer to use for training.
-        """
+        model_comps = params.model_comps
+        optimizer = params.optimizer
 
-        if checkpoints_handler.num_checkpoints() > 0:
-            model_comps, optimizer, _ = checkpoints_handler.get_newest_checkpoint(model_comps,
-                                                                                  optimizer)
+        if params.checkpoints_handler.num_checkpoints() > 0:
+            model_comps, optimizer, _ = params.checkpoints_handler.get_newest_checkpoint(  # type: ignore # pylint: disable=line-too-long
+                model_comps,
+                optimizer)
 
         self._model_comps = model_comps
-        self._train_data_loader = train_data_loader
-        self._val_data_loader = val_data_loader
-        self._tb_logger = tb_logger
-        self._device = device
-        self._validation_interval = validation_interval
-        self._checkpoints_handler = checkpoints_handler
-        self._checkpoints_interval = checkpoints_interval
         self._optimizer = optimizer
-        self._log_interval = log_interval
+        self._train_data_loader = params.train_data_loader
+        self._val_data_loader = params.val_data_loader
+        self._tb_logger = params.tb_logger
+        self._device = params.device
+        self._validation_interval = params.validation_interval
+        self._checkpoints_handler = params.checkpoints_handler
+        self._checkpoints_interval = params.checkpoints_interval
+        self._log_interval = params.log_interval
 
     def run_training(self, num_steps: int, start_step: int = 0, use_profiler: bool = False):
         """Runs the training pipeline.
 
         Args:
-            num_steps: The number of training steps to run.
+            num_steps: The total number of training steps to run. Once the step index reaches this,
+                the training stops.
             start_step: The step to start training from.
             use_profiler: Whether to use the code profiling while training.
         """
@@ -103,11 +116,20 @@ class BaseTrainer(abc.ABC):
         """
 
         start_time = time.time()
-        logging.debug('Training pipeline started.')
+        logging.info('Training pipeline started.')
 
         data_loader_enum = enumerate(self._train_data_loader)
 
-        for step_idx in range(start_step, num_steps):
+        for step_idx in tqdm.tqdm(range(start_step, num_steps),
+                                  desc='Training',
+                                  dynamic_ncols=True,
+                                  miniters=self._log_interval,
+                                  unit='steps',
+                                  total=num_steps,
+                                  initial=start_step,
+                                  colour='#115b80'):
+
+            self._on_step_start(step_idx)
 
             try:
                 _, batch = next(data_loader_enum)
@@ -121,14 +143,8 @@ class BaseTrainer(abc.ABC):
 
             self._run_training_step(step_idx, batch)
 
-            if (step_idx + 1) % self._log_interval == 0:
-                logging.debug('Performed %d training steps. (Avg time/step in sec: %.2f).',
-                              step_idx + 1,
-                              (time.time() - start_time) / (step_idx - start_step + 1))
-
             if (step_idx + 1) % self._validation_interval == 0:
 
-                logging.debug('Running validation after %d steps...', step_idx + 1)
                 self._run_validation(step_idx)
 
             if (step_idx + 1) % self._checkpoints_interval == 0:
@@ -144,9 +160,9 @@ class BaseTrainer(abc.ABC):
             self._on_step_end(step_idx)
 
         logging.info('Training pipeline finished.')
-        logging.debug('Training took %.2f minutes.', (time.time() - start_time) / 60)
-        logging.debug('Average time per step: %.2f seconds.',
-                      (time.time() - start_time) / (num_steps - start_step))
+        logging.info('Training took %.2f minutes.', (time.time() - start_time) / 60)
+        logging.info('Average time per step: %.2f seconds.',
+                     (time.time() - start_time) / (num_steps - start_step))
 
     def _run_training_step(self, step_idx: int, batch):
         """Runs a single training step.
@@ -161,14 +177,19 @@ class BaseTrainer(abc.ABC):
 
         self._optimizer.zero_grad()
 
-        losses_and_metrics = self._compute_losses(batch)
+        losses_and_metrics = self._compute_losses_and_metrics(batch)
+        losses, metrics = self._extract_losses_and_metrics(losses_and_metrics)
 
-        for name, value in losses_and_metrics.items():
+        if not losses:
+            logging.critical('No losses returned by the model!')
+            sys.exit(-1)
+
+        for name, value in itertools.chain(losses.items(), metrics.items()):
             self._tb_logger.add_scalars(name, {'training': value.item()}, step_idx)
 
-        total_loss = losses_and_metrics['total_loss']
+        for loss in losses.values():
+            loss.backward()
 
-        total_loss.backward()
         self._optimizer.step()
 
     def _run_validation(self, step_idx: int):
@@ -184,13 +205,18 @@ class BaseTrainer(abc.ABC):
 
             avg_losses_and_metrics = {}
 
-            for batch in self._val_data_loader:
+            for batch in tqdm.tqdm(self._val_data_loader,
+                                   'Validation',
+                                   leave=False,
+                                   unit='batches',
+                                   colour='#1b91cc'):
 
                 batch = tuple(tensor.to(self._device) for tensor in batch)
 
-                losses_and_metrics = self._compute_losses(batch)
+                losses_and_metrics = self._compute_losses_and_metrics(batch)
+                losses, metrics = self._extract_losses_and_metrics(losses_and_metrics)
 
-                for name, value in losses_and_metrics.items():
+                for name, value in itertools.chain(losses.items(), metrics.items()):
 
                     if name not in avg_losses_and_metrics:
                         avg_losses_and_metrics[name] = torch.tensor(0.0, device=self._device)
@@ -204,10 +230,21 @@ class BaseTrainer(abc.ABC):
                                             {'validation': avg_losses_and_metrics[name].item()},
                                             step_idx)
 
+    def _extract_losses_and_metrics(self,
+                                    losses_and_metrics: Tuple[Dict[str, torch.Tensor], ...]):
+        """Validates and splits the losses and metrics returned by the forward pass."""
+
+        assert len(losses_and_metrics) in (1, 2), 'Expected either losses or losses with metrics!'
+
+        if len(losses_and_metrics) == 2:
+            return losses_and_metrics
+
+        return losses_and_metrics[0], {}
+
     @abc.abstractmethod
-    def _compute_losses(self,
-                        input_batch: Tuple[torch.Tensor, ...]
-                        ) -> Dict[str, torch.Tensor]:
+    def _compute_losses_and_metrics(self,
+                                    input_batch: Tuple[torch.Tensor, ...]
+                                    ) -> Tuple[Dict[str, torch.Tensor], ...]:
         """Computes the losses for the given inputs.
 
         Args:
@@ -215,13 +252,21 @@ class BaseTrainer(abc.ABC):
                 chosen device before calling this function.
 
         Returns:
-            A dictionary containing the computed losses and metrics. The dictionary should
-            contain at least a tensor named 'total_loss', since the backward propagation is
-            computed with respect to this value.
+            A dictionary containing the losses, with respect to which the gradients shall be
+            calculated. If there are additional metrics, not requiring gradient,
+            they should be put in a second returned dictionary.
         """
 
     @abc.abstractmethod
     def _on_step_end(self, step_idx: int):
+        """Runs after each training step.
+
+        Args:
+            step_idx: The index of the current step.
+        """
+
+    @abc.abstractmethod
+    def _on_step_start(self, step_idx: int):
         """Runs after each training step.
 
         Args:

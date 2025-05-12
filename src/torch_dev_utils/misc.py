@@ -1,8 +1,8 @@
+# -*- coding: utf-8 -*-
 """Contains miscelaneous utilities."""
-
+import abc
 from typing import Any
 from typing import Dict
-import abc
 
 import torch
 
