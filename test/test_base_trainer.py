@@ -56,15 +56,15 @@ class SampleTrainer(training.BaseTrainer):
         assert isinstance(self._model_comps, SampleModelComps)
         return self._model_comps
 
-    def _compute_losses(self,
+    def _compute_losses_and_metrics(self,
                         input_batch: Tuple[torch.Tensor, ...]
-                        ) -> Dict[str, torch.Tensor]:
+                        ) -> Tuple[Dict[str, torch.Tensor], ...]:
 
         inputs, labels = input_batch
 
-        return {
+        return ({
             'total_loss': self.loss_func(self.model_comps.layer(inputs), labels)
-        }
+        },)
 
     def _on_step_end(self, step_idx):
         self.steps_start_cnt += 1

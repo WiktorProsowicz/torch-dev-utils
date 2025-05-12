@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Contains utilities for training and evaluation of models."""
 import abc
+import itertools
 import logging
 import sys
 import time
@@ -176,18 +177,19 @@ class BaseTrainer(abc.ABC):
 
         self._optimizer.zero_grad()
 
-        losses_and_metrics = self._compute_losses(batch)
+        losses_and_metrics = self._compute_losses_and_metrics(batch)
+        losses, metrics = self._extract_losses_and_metrics(losses_and_metrics)
 
-        for name, value in losses_and_metrics.items():
+        if not losses:
+            logging.critical('No losses returned by the model!')
+            sys.exit(-1)
+
+        for name, value in itertools.chain(losses.items(), metrics.items()):
             self._tb_logger.add_scalars(name, {'training': value.item()}, step_idx)
 
-        if 'total_loss' not in losses_and_metrics:
-            logging.critical('Returned losses dictionary should contain "total_loss" key!')
-            sys.exit(1)
+        for loss in losses.values():
+            loss.backward()
 
-        total_loss = losses_and_metrics['total_loss']
-
-        total_loss.backward()
         self._optimizer.step()
 
     def _run_validation(self, step_idx: int):
@@ -211,9 +213,10 @@ class BaseTrainer(abc.ABC):
 
                 batch = tuple(tensor.to(self._device) for tensor in batch)
 
-                losses_and_metrics = self._compute_losses(batch)
+                losses_and_metrics = self._compute_losses_and_metrics(batch)
+                losses, metrics = self._extract_losses_and_metrics(losses_and_metrics)
 
-                for name, value in losses_and_metrics.items():
+                for name, value in itertools.chain(losses.items(), metrics.items()):
 
                     if name not in avg_losses_and_metrics:
                         avg_losses_and_metrics[name] = torch.tensor(0.0, device=self._device)
@@ -227,10 +230,21 @@ class BaseTrainer(abc.ABC):
                                             {'validation': avg_losses_and_metrics[name].item()},
                                             step_idx)
 
+    def _extract_losses_and_metrics(self,
+                                    losses_and_metrics: Tuple[Dict[str, torch.Tensor], ...]):
+        """Validates and splits the losses and metrics returned by the forward pass."""
+
+        assert len(losses_and_metrics) in (1, 2), 'Expected either losses or losses with metrics!'
+
+        if len(losses_and_metrics) == 2:
+            return losses_and_metrics
+
+        return losses_and_metrics[0], {}
+
     @abc.abstractmethod
-    def _compute_losses(self,
-                        input_batch: Tuple[torch.Tensor, ...]
-                        ) -> Dict[str, torch.Tensor]:
+    def _compute_losses_and_metrics(self,
+                                    input_batch: Tuple[torch.Tensor, ...]
+                                    ) -> Tuple[Dict[str, torch.Tensor], ...]:
         """Computes the losses for the given inputs.
 
         Args:
@@ -238,9 +252,9 @@ class BaseTrainer(abc.ABC):
                 chosen device before calling this function.
 
         Returns:
-            A dictionary containing the computed losses and metrics. The dictionary should
-            contain at least a tensor named 'total_loss', since the backward propagation is
-            computed with respect to this value.
+            A dictionary containing the losses, with respect to which the gradients shall be
+            calculated. If there are additional metrics, not requiring gradient,
+            they should be put in a second returned dictionary.
         """
 
     @abc.abstractmethod
