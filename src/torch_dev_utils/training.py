@@ -3,7 +3,6 @@
 import abc
 import itertools
 import logging
-import sys
 import time
 from dataclasses import dataclass
 from typing import Dict
@@ -180,9 +179,7 @@ class BaseTrainer(abc.ABC):
         losses_and_metrics = self._compute_losses_and_metrics(batch)
         losses, metrics = self._extract_losses_and_metrics(losses_and_metrics)
 
-        if not losses:
-            logging.critical('No losses returned by the model!')
-            raise TrainingError("No losses returned by the model!")
+        assert losses, 'No losses were returned by the model!'
 
         for name, value in itertools.chain(losses.items(), metrics.items()):
             self._tb_logger.add_scalars(name, {'training': value.item()}, step_idx)
