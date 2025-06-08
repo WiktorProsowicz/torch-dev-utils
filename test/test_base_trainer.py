@@ -57,8 +57,8 @@ class SampleTrainer(training.BaseTrainer):
         return self._model_comps
 
     def _compute_losses_and_metrics(self,
-                        input_batch: Tuple[torch.Tensor, ...]
-                        ) -> Tuple[Dict[str, torch.Tensor], ...]:
+                                    input_batch: Tuple[torch.Tensor, ...]
+                                    ) -> Tuple[Dict[str, torch.Tensor], ...]:
 
         inputs, labels = input_batch
 
