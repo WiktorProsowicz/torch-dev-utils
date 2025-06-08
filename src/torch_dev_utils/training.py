@@ -182,7 +182,7 @@ class BaseTrainer(abc.ABC):
 
         if not losses:
             logging.critical('No losses returned by the model!')
-            sys.exit(-1)
+            raise TrainingError("No losses returned by the model!")
 
         for name, value in itertools.chain(losses.items(), metrics.items()):
             self._tb_logger.add_scalars(name, {'training': value.item()}, step_idx)
