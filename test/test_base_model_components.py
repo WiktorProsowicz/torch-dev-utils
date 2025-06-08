@@ -1,10 +1,10 @@
-
+# -*- coding: utf-8 -*-
 import dataclasses
 import itertools
 from typing import Optional
 
-import torch
 import pytest
+import torch
 
 from torch_dev_utils import model
 
@@ -17,7 +17,7 @@ class TestModelComponents(model.BaseModelComponents):
     comp_dense_2: torch.nn.Linear
     comp_none: Optional[torch.nn.Module]
 
-    def get_components(self):
+    def get_components(self) -> model.NamedModelComps:
         return {
             'comp_dense_1': self.comp_dense_1,
             'comp_dense_2': self.comp_dense_2,
@@ -36,7 +36,12 @@ def sample_model_components():
     )
 
 
-def test_yields_correct_params(sample_model_components):
+# ----------------------------------------------------------------------------
+# UNIT TESTS SECTION
+# ----------------------------------------------------------------------------
+
+
+def test_yields_correct_params(sample_model_components: TestModelComponents):
 
     def expected_params():
         return itertools.chain(
@@ -49,7 +54,7 @@ def test_yields_correct_params(sample_model_components):
         assert param is expected_param
 
 
-def test_sets_eval_mode(sample_model_components):
+def test_sets_eval_mode(sample_model_components: TestModelComponents):
 
     sample_model_components.eval()
 
@@ -58,7 +63,7 @@ def test_sets_eval_mode(sample_model_components):
             assert comp.training is False
 
 
-def test_sets_train_mode(sample_model_components):
+def test_sets_train_mode(sample_model_components: TestModelComponents):
 
     sample_model_components.train()
 

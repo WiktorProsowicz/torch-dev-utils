@@ -1,0 +1,10 @@
+{
+    "checkpoints": [
+        {
+            "directory_name": "ckpt_0",
+            "metadata": {
+                "n_training_steps": 10
+            }
+        }
+    ]
+}
