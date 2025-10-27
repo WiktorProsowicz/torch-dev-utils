@@ -7,18 +7,23 @@ name = "torch_dev_utils"
 version = "0.1.0"
 requires-python=">=3.11"
 dependencies = [
-    "torch>=2.5.1",
-    "tensorboard>=2.18.0",
-    "tqdm>=4.66.5"
+    "tensorboard>=2.20.0",
+    "tqdm>=4.66.5",
+    "tgt>=1.4.4",
+    "gruut>=2.4.0",
+    "nltk>=3.9.2",
+    "transformers[sentencepiece]>=4.56.2",
+    "torch>=2.8.0"
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
-    "mypy",
-    "pre-commit",
-    "pylint"
+    "mypy>=1.18.1",
+    "pre-commit>=4.3.0",
+    "autopep8>=2.3.2",
+    "pylint>=3.1.0",
 ]
 
 [tool.coverage.report]
