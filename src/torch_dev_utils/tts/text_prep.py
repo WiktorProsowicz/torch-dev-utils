@@ -13,7 +13,7 @@ import re
 import numpy as np
 import gruut
 import torch
-from transformers import DebertaV2Tokenizer, DebertaV2Model
+from transformers import AutoTokenizer
 import nltk
 
 
@@ -196,10 +196,18 @@ class TextProcessor:
         "'"
     )
 
-    def __init__(self, tokenizer_tag: str):
-        """Inits the text processor."""
+    def __init__(self, bert_tokenizer_tag: Optional[str] = None):
+        """Inits the text processor.
 
-        self._tokenizer = DebertaV2Tokenizer.from_pretrained(tokenizer_tag)
+        Args:
+            bert_tokenizer_tag: HF hub name of the pre-trained BERT model's tokenizer.
+        """
+
+        if bert_tokenizer_tag is not None:
+            self._tokenizer = AutoTokenizer.from_pretrained(bert_tokenizer_tag)
+
+        else:
+            self._tokenizer = None
 
         self._phoneme_to_id = {p: i for i, p in enumerate(self.SUPPORTED_PHONEMES, start=1)}
         self._pos_to_id = {t: i for i, t in enumerate(self._NLTK_POS_TAGS, start=1)}
@@ -261,8 +269,9 @@ class TextProcessor:
             words.append(word_struct.text)
             word_phoneme_mapping.append((word_struct.text, word_struct.phonemes))
 
-            tokens = self._tokenizer.tokenize(word_struct.text_with_punct)
-            word_bert_mapping.append((word_struct.text, tokens))
+            if self._tokenizer is not None:
+                tokens = self._tokenizer.tokenize(word_struct.text_with_punct)
+                word_bert_mapping.append((word_struct.text, tokens))
 
         return TextFeatures(
             normalized_text=normalized_text,
@@ -286,6 +295,10 @@ class TextProcessor:
 
     def obtain_bert_tokens_for_sentence(self, sentence: str) -> List[str]:
         """Obtains BERT tokens for a given sentence."""
+
+        if self._tokenizer is None:
+            _logger().critical('Processor does not support BERT tokenizing.')
+            sys.exit(1)
 
         sentence = self._prepare_for_tokenization(sentence)
         return self._tokenizer.tokenize(sentence)

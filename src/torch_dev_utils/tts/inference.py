@@ -5,7 +5,7 @@ from typing import List, Callable, Optional
 import numpy as np
 import torch
 
-from paragraph_tts.utils import neural as neural_utils
+from torch_dev_utils.tts import neural_utils
 
 MAX_ALLOWED_DURATION = 10000  # To avoid OOM errors during inference
 

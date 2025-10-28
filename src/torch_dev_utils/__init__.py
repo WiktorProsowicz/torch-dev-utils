@@ -5,3 +5,4 @@ from . import misc
 from . import model
 from . import serialization
 from . import training
+from . import tts
