@@ -29,7 +29,7 @@ class ProcessedDataset(torch_data.Dataset):
         """Returns the number of samples in the dataset."""
         return len(self._file_ids)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, ...]:
         """Returns the dataset sample with the given index.
 
         Args:
@@ -65,7 +65,7 @@ def get_datasets(processed_dataset_path: str,
 
     A processed dataset is a dataset that has already been pre-processed and saved in a directory
     as a set of .pt files. The files are expected to contain PyTorch tensors and built-in structures
-    si that it could be loaded using torch.load. The files' names shall be considered as the IDs of
+    so that it could be loaded using torch.load. The files' names shall be considered as the IDs of
     the samples.
 
     Args:
