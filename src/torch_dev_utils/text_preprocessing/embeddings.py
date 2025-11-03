@@ -24,8 +24,8 @@ class BERTEmbedder:
             batch_size: Maximal size of a batch in batch processing.
         """
 
-        self._embedder = AutoModel(pretrained_model_name)
-        self._tokenizer = AutoTokenizer(pretrained_model_name)
+        self._embedder = AutoModel.from_pretrained(pretrained_model_name).to(device)
+        self._tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
         self._device = device
         self._batch_size = batch_size
 
@@ -96,9 +96,9 @@ class BERTEmbedder:
 
             with torch.no_grad():
                 model_output = self._embedder(
-                    input_ids=torch.tensor(batch_input_ids).to(self._bert_device),
-                    attention_mask=torch.tensor(batch_attention_mask).to(self._bert_device),
-                    token_type_ids=(torch.tensor(batch_token_type_ids).to(self._bert_device)
+                    input_ids=torch.tensor(batch_input_ids).to(self._device),
+                    attention_mask=torch.tensor(batch_attention_mask).to(self._device),
+                    token_type_ids=(torch.tensor(batch_token_type_ids).to(self._device)
                                     if batch_token_type_ids is not None else None)
                 )
                 batch_outputs = model_output.last_hidden_state.cpu()
@@ -114,7 +114,7 @@ class BERTEmbedder:
         input_ids = self._tokenizer.convert_tokens_to_ids(input_tokens)
 
         with torch.no_grad():
-            model_output = self._embedder(torch.tensor([input_ids]).to(self._bert_device))
+            model_output = self._embedder(torch.tensor([input_ids]).to(self._device))
             outputs = model_output.last_hidden_state.cpu()
 
         return outputs[0][1:-1]
