@@ -49,7 +49,7 @@ def plot_spec_text_alignment(alignment: torch.Tensor):
 def plot_contours(pred_contour: torch.Tensor,
                   target_contour: torch.Tensor,
                   contour_name: str):
-    """Plots predicted and target contours (pitch/energy/duration) over time."""
+    """Plots predicted and target contours (e.g. pitch/energy/duration) over time."""
 
     fig, ax = plt.subplots(figsize=(10, 4))
 
@@ -65,6 +65,23 @@ def plot_contours(pred_contour: torch.Tensor,
     ax.plot(pred_contour.cpu().numpy(), label='Predicted', color='blue')
     ax.plot(target_contour.cpu().numpy(), label='Target', color='orange')
     ax.set_title(f'{contour_name} Contours')
+    ax.set_xlabel('Frame Index')
+    ax.set_ylabel(f'{contour_name} Value')
+    ax.legend()
+
+    fig.tight_layout()
+
+    return fig
+
+
+def plot_contour(contour: torch.Tensor,
+                 contour_name: str):
+    """Plots a single contour (e.g. pitch/energy/duration) over time."""
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+
+    ax.plot(contour.cpu().numpy(), label=contour_name, color='green')
+    ax.set_title(f'{contour_name} Contour')
     ax.set_xlabel('Frame Index')
     ax.set_ylabel(f'{contour_name} Value')
     ax.legend()
