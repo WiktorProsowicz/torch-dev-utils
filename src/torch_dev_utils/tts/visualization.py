@@ -89,3 +89,21 @@ def plot_contour(contour: torch.Tensor,
     fig.tight_layout()
 
     return fig
+
+def plot_matrix(matrix: torch.Tensor,
+                title: str,
+                xlabel: str,
+                ylabel: str):
+    """Plots a generic matrix with labels."""
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    im = ax.imshow(matrix.cpu().numpy(), origin='lower', interpolation='none')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    fig.colorbar(im, ax=ax)
+    fig.tight_layout()
+
+    return fig
