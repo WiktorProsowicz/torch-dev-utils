@@ -85,12 +85,12 @@ class BERTEmbedder:
 
         outputs: List[torch.Tensor] = []
 
-        for i in range(0, len(input_ids), self._max_sentences_in_batch):
-            batch_input_ids = input_ids[i:i + self._max_sentences_in_batch]
-            batch_attention_mask = attention_mask[i:i + self._max_sentences_in_batch]
+        for i in range(0, len(input_ids), self._batch_size):
+            batch_input_ids = input_ids[i:i + self._batch_size]
+            batch_attention_mask = attention_mask[i:i + self._batch_size]
 
             if token_type_ids is not None:
-                batch_token_type_ids = token_type_ids[i:i + self._max_sentences_in_batch]
+                batch_token_type_ids = token_type_ids[i:i + self._batch_size]
             else:
                 batch_token_type_ids = None
 
