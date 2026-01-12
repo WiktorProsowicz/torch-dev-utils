@@ -13,7 +13,8 @@ dependencies = [
     "gruut>=2.4.0",
     "nltk>=3.9.2",
     "transformers[sentencepiece]>=4.56.2",
-    "torch>=2.8.0"
+    "torch>=2.8.0",
+    "fastdtw>=0.3.4"
 ]
 
 [project.optional-dependencies]
