@@ -1,7 +1,11 @@
 """Contains utilities for visualization during training/inference."""
 
+import pathlib
+
 import torch
 import matplotlib.pyplot as plt
+import numpy as np
+import librosa
 
 
 def plot_spectrograms(pred_spec: torch.Tensor,
@@ -107,3 +111,39 @@ def plot_matrix(matrix: torch.Tensor,
     fig.tight_layout()
 
     return fig
+
+def plot_and_save_spectrogram(spec: np.ndarray,
+                              sr: int,
+                              hop_length: int,
+                              title: str,
+                              output_path: pathlib.Path):
+    """Plots and saves a single mel-spectrogram."""
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+
+    librosa.display.specshow(spec, x_axis='time', y_axis='mel', sr=sr, hop_length=hop_length, ax=ax)
+    ax.set_title(title)
+
+    fig.tight_layout()
+
+    fig.savefig(output_path)
+    plt.close(fig)
+
+
+def plot_and_save_contour(contour: np.ndarray,
+                          contour_name: str,
+                          output_path: pathlib.Path):
+    """Plots and saves a single contour (pitch/energy/duration) over time."""
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+
+    ax.plot(contour, label=contour_name, color='#4A8F8E')
+    ax.set_title(f'{contour_name} Contour')
+    ax.set_xlabel('Time Index')
+    ax.set_ylabel(f'{contour_name}')
+    ax.legend()
+
+    fig.tight_layout()
+
+    fig.savefig(output_path)
+    plt.close(fig)
