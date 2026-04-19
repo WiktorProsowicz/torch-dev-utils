@@ -129,6 +129,27 @@ def plot_and_save_spectrogram(spec: np.ndarray,
     fig.savefig(output_path)
     plt.close(fig)
 
+def plot_and_save_spectrograms(pred_spec: np.ndarray,
+                               target_spec: np.ndarray,
+                               sr: int,
+                               hop_length: int,
+                               output_path: pathlib.Path):
+    """Plots and saves predicted and target mel-spectrograms."""
+
+    fig, ax = plt.subplots(2, figsize=(10, 4), sharex=True)
+
+    librosa.display.specshow(pred_spec, x_axis='time', y_axis='mel',
+                             sr=sr, hop_length=hop_length, ax=ax[0])
+    ax[0].set_title('Predicted Mel-Spectrogram')
+
+    librosa.display.specshow(target_spec, x_axis='time', y_axis='mel',
+                             sr=sr, hop_length=hop_length, ax=ax[1])
+    ax[1].set_title('Target Mel-Spectrogram')
+
+    fig.tight_layout()
+
+    fig.savefig(output_path)
+    plt.close(fig)
 
 def plot_and_save_contour(contour: np.ndarray,
                           contour_name: str,
@@ -139,6 +160,26 @@ def plot_and_save_contour(contour: np.ndarray,
 
     ax.plot(contour, label=contour_name, color='#4A8F8E')
     ax.set_title(f'{contour_name} Contour')
+    ax.set_xlabel('Time Index')
+    ax.set_ylabel(f'{contour_name}')
+    ax.legend()
+
+    fig.tight_layout()
+
+    fig.savefig(output_path)
+    plt.close(fig)
+
+def plot_and_save_contours(pred_contour: np.ndarray,
+                           target_contour: np.ndarray,
+                           contour_name: str,
+                           output_path: pathlib.Path):
+    """Plots and saves predicted and target contours (pitch/energy/duration) over time."""
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+
+    ax.plot(pred_contour, label='Predicted', color='#4A8F8E')
+    ax.plot(target_contour, label='Target', color='#D9BF77')
+    ax.set_title(f'{contour_name} Contours')
     ax.set_xlabel('Time Index')
     ax.set_ylabel(f'{contour_name}')
     ax.legend()
