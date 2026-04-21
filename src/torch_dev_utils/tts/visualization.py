@@ -112,6 +112,26 @@ def plot_matrix(matrix: torch.Tensor,
 
     return fig
 
+def plot_and_save_matrix(matrix: torch.Tensor,
+                         title: str,
+                         xlabel: str,
+                         ylabel: str,
+                         output_path: pathlib.Path):
+    """Plots and saves a generic matrix with labels."""
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    im = ax.imshow(matrix.cpu().numpy(), origin='lower', interpolation='none')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    fig.colorbar(im, ax=ax)
+    fig.tight_layout()
+
+    fig.savefig(output_path)
+    plt.close(fig)
+
 def plot_and_save_spectrogram(spec: np.ndarray,
                               sr: int,
                               hop_length: int,
